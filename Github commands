@@ -1,1 +1,33 @@
-
+Command	Purpose
+git --version          	Check Git version
+git config             	Configure Git username and email
+git init	              Initialize a new Git repository
+git clone <url>        	Copy a remote GitHub repository locally
+git status	            Check repository status
+git add <file>        	Add a specific file to staging
+git add .	              Add all changes in the current directory
+git add -A            	Add all changes, including deletions
+git add -u            	Stage modifications and deletions of tracked files
+git commit -m "message"	Save staged changes as a commit
+git log	                View commit history
+git diff	              View changes that are not staged
+git branch	            List branches
+git branch <name>      	Create a new branch
+git checkout <branch>	  Switch to a branch
+git checkout -b <name>	Create and switch to a new branch
+git merge <branch>	    Merge a branch
+git rebase <branch>    	Reapply commits on another branch
+git remote -v	          View connected remote repository
+git remote add origin <url>	Connect local repository to GitHub
+git fetch	              Get updates from the remote repository
+git pull	              Get and merge remote changes
+git push	              Upload commits to GitHub
+git push -u origin <branch>	Push a new branch and set its upstream
+git stash	            Temporarily save uncommitted changes
+git stash pop	          Restore stashed changes
+git cherry-pick <commit>	Apply a specific commit
+git reset --soft HEAD~1	      Undo last commit while keeping changes
+git reset --hard HEAD~1      	Undo last commit and discard changes
+git rebase -i HEAD~3	        Interactively modify/squash recent commits
+git commit --amend	          Modify the latest commit
+git push --force	            Force update a remote branch
