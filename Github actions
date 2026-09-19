@@ -1,0 +1,585 @@
+## **Github Actions :**
+
+## 1. What is GitHub Actions?
+
+**GitHub Actions** is a CI/CD and automation platform provided by GitHub. It allows us to automatically run tasks when certain events happen in a repository.
+
+For example:
+
+- Run tests whenever code is pushed.
+- Run tests when a Pull Request is created.
+- Build an application automatically.
+- Deploy an application after successful testing.
+
+---
+
+## 2. Workflow
+
+A **workflow** is an automated process defined in a YAML file.
+
+Workflow files are stored inside:
+
+```
+.github/
+└── workflows/
+    └── ci.yml
+```
+
+A workflow contains:
+
+- Triggers/events
+- Jobs
+- Steps
+- Actions
+- Commands
+
+Example:
+
+```
+name: CI
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - run: python --version
+```
+
+---
+
+## 3. Workflow YAML
+
+GitHub Actions workflows are written using **YAML**.
+
+Basic structure:
+
+```
+name: Workflow Name
+
+on:# Events that trigger the workflow
+
+jobs:# Jobs to execute
+```
+
+### Main YAML sections
+
+```
+Workflow
+│
+├── name
+├── on
+│   └── triggers/events
+│
+└── jobs
+    ├── job
+    │   ├── runs-on
+    │   └── steps
+    │       ├── uses
+    │       └── run
+```
+
+YAML uses **indentation** to represent structure.
+
+---
+
+# 4. Triggers / Events
+
+A trigger determines **when the workflow should run**.
+
+## `push`
+
+Runs when code is pushed to the repository.
+
+```
+on:
+  push:
+```
+
+You can also restrict it to a branch:
+
+```
+on:
+  push:
+    branches:
+      - main
+```
+
+---
+
+## `pull_request`
+
+Runs when a Pull Request event occurs.
+
+```
+on:
+  pull_request:
+```
+
+For example, this can be used to automatically run tests whenever someone creates or updates a PR.
+
+---
+
+## `workflow_dispatch`
+
+Allows the workflow to be **manually triggered** from GitHub.
+
+```
+on:
+  workflow_dispatch:
+```
+
+So instead of waiting for a `push` or `pull_request`, you can run the workflow manually.
+
+---
+
+# 5. Jobs
+
+A **job** is a group of steps that are executed together.
+
+Example:
+
+```
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - run: echo "Running tests"
+```
+
+Here:
+
+```
+test
+└── Job
+    └── Steps
+```
+
+A workflow can contain multiple jobs.
+
+```
+jobs:
+  test:
+    ...
+
+  build:
+    ...
+```
+
+By default, jobs can run independently.
+
+---
+
+# 6. Runners
+
+A **runner** is the machine/environment where a job executes.
+
+Example:
+
+```
+runs-on: ubuntu-latest
+```
+
+This tells GitHub Actions to run the job on an Ubuntu environment.
+
+Example:
+
+```
+jobs:
+  test:
+    runs-on: ubuntu-latest
+```
+
+The runner provides the environment required to execute the commands and steps in the job.
+
+---
+
+# 7. Steps
+
+A **step** is an individual task inside a job.
+
+Example:
+
+```
+steps:
+  - run: echo "Hello"
+  - run: python --version
+```
+
+A job can contain multiple steps.
+
+```
+Job
+│
+├── Step 1
+├── Step 2
+├── Step 3
+└── Step 4
+```
+
+Steps execute in order.
+
+---
+
+# 8. `run`, `uses`, and `with`
+
+These are commonly used inside steps.
+
+### `run`
+
+Used to execute a shell command.
+
+```
+- run: echo "Hello World"
+```
+
+Another example:
+
+```
+- run: pytest
+```
+
+---
+
+### `uses`
+
+Used to use an existing GitHub Action.
+
+```
+- uses: actions/checkout@v4
+```
+
+Instead of writing all the logic ourselves, we use an existing action.
+
+---
+
+### `with`
+
+Used to provide inputs/options to an action.
+
+Example:
+
+```
+- uses: actions/setup-python@v5
+  with:
+    python-version:'3.11'
+```
+
+Here:
+
+```
+uses → which action to use
+with → what inputs/options to provide
+```
+
+---
+
+# 9. Checkout Action
+
+The checkout action is used to **retrieve the repository code into the runner**.
+
+```
+- uses: actions/checkout@v4
+```
+
+Without checking out the repository, the runner does not automatically have the repository's working files available for normal build/test commands.
+
+Typical workflow:
+
+```
+steps:
+  - uses: actions/checkout@v4
+  - run: ls
+```
+
+---
+
+# 10. Setup Python
+
+`actions/setup-python` is used to configure Python in the runner.
+
+```
+- uses: actions/setup-python@v5
+  with:
+    python-version:'3.11'
+```
+
+This allows the workflow to use the specified Python version.
+
+Example:
+
+```
+steps:
+  - uses: actions/checkout@v4
+
+  - uses: actions/setup-python@v5
+    with:
+      python-version:'3.11'
+
+  - run: python --version
+```
+
+---
+
+# 11. CI with pytest
+
+**CI — Continuous Integration** means automatically validating code changes.
+
+A simple Python CI workflow can:
+
+```
+Push code
+   ↓
+Workflow starts
+   ↓
+Checkout code
+   ↓
+Setup Python
+   ↓
+Install dependencies
+   ↓
+Run pytest
+   ↓
+Pass / Fail
+```
+
+Example:
+
+```
+name: Python CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version:'3.11'
+
+      - run: pip install -r requirements.txt
+      - run: pytest
+```
+
+If the tests fail, the workflow reports a failure.
+
+---
+
+# 12. Artifacts
+
+**Artifacts** are files produced by a workflow that we want to save and access after the job finishes.
+
+Examples:
+
+- Test reports
+- Build files
+- Logs
+- Generated packages
+
+Conceptually:
+
+```
+Workflow
+   ↓
+Build/Test
+   ↓
+Generated files
+   ↓
+Upload as Artifact
+   ↓
+Download later
+```
+
+---
+
+# 13. Secrets and Environment Variables
+
+### Secrets
+
+Secrets are used to store sensitive information such as:
+
+- API keys
+- Tokens
+- Passwords
+- Credentials
+
+They should not be directly written inside the workflow YAML.
+
+A secret can be referenced like:
+
+```
+${{ secrets.API_KEY }}
+```
+
+---
+
+### Environment Variables
+
+Environment variables store values that can be used by commands in the workflow.
+
+Example:
+
+```
+env:
+  APP_ENV: production
+```
+
+Then:
+
+```
+- run: echo $APP_ENV
+```
+
+So:
+
+```
+Secrets → sensitive information
+Environment variables → configuration/values used by the workflow
+```
+
+---
+
+# 14. `needs`
+
+`needs` is used when one job **depends on another job**.
+
+Example:
+
+```
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: pytest
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Deploying"
+```
+
+Here:
+
+```
+test
+ ↓
+deploy
+```
+
+The `deploy` job waits for `test` to complete successfully.
+
+---
+
+# 15. Conditions
+
+Conditions control **whether a job or step should run**.
+
+Example:
+
+```
+- name: Deploy
+  if: success()
+  run: echo "Deploying"
+```
+
+Conditions can be used when we want certain tasks to execute only under specific circumstances.
+
+For example:
+
+```
+Tests successful?
+      │
+   Yes ↓
+    Deploy
+```
+
+---
+
+# 16. Matrix Strategy
+
+A **matrix** allows the same job to run with different combinations of values.
+
+For example, testing a Python application against multiple Python versions:
+
+```
+strategy:
+  matrix:
+    python-version: ['3.9','3.10','3.11']
+```
+
+Then:
+
+```
+- uses: actions/setup-python@v5
+  with:
+    python-version: ${{ matrix.python-version }}
+```
+
+Instead of manually creating three jobs:
+
+```
+Python 3.9 ──→ Test
+Python 3.10 ─→ Test
+Python 3.11 ─→ Test
+```
+
+GitHub Actions creates the combinations automatically.
+
+---
+
+# 17. CI vs CD
+
+### CI — Continuous Integration
+
+Focuses on **integrating and validating code changes**.
+
+Typical CI tasks:
+
+```
+Code Push
+   ↓
+Build
+   ↓
+Install dependencies
+   ↓
+Run tests
+   ↓
+Check code
+```
+
+### CD — Continuous Delivery / Deployment
+
+Focuses on **delivering or deploying the application** after successful validation.
+
+```
+Code
+ ↓
+CI
+ ↓
+Tests pass
+ ↓
+Build
+ ↓
+Deploy
+```
+
+So the simple difference is:
+
+> **CI checks whether the code works.**
+> 
+
+> **CD takes the validated code toward delivery/deployment.**
+>
