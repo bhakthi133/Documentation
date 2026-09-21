@@ -1,0 +1,593 @@
+
+1. JENKINS BASICS
+
+---
+
+Jenkins is a CI/CD automation tool.
+
+It automates tasks such as:
+
+* Getting source code from Git/GitHub
+* Installing dependencies
+* Running tests
+* Building applications
+* Deploying applications
+* Sending notifications
+
+Jenkins can perform these tasks automatically when a configured event
+occurs.
+
+## JENKINS VS GITHUB ACTIONS
+
+GitHub Actions:
+
+GitHub
+|
+Workflow
+|
+Jobs
+|
+Steps
+|
+Tests
+
+Jenkins:
+
+GitHub
+|
+Jenkins
+|
+Pipeline
+|
+Stages
+|
+Steps
+|
+Tests
+
+Jenkins is commonly used when organizations need more control over
+infrastructure, agents, plugins, credentials, and integrations.
+
+
+3. JENKINS DASHBOARD
+
+---
+
+Important areas explored in the Jenkins dashboard:
+
+* Jobs / Pipelines
+* Build History
+* Console Output
+* Configure
+* Pipeline Stages
+* Build with Parameters
+* GitHub Hook Log
+* Pipeline Syntax
+* Workspace
+* Build Information
+* Replay
+* Restart from Stage
+
+4. JENKINS PIPELINE
+
+---
+
+A Pipeline defines the automated process that Jenkins should execute.
+
+Basic structure:
+
+Pipeline
+|
+Agent
+|
+Stages
+|
+Steps
+
+Example:
+
+pipeline {
+agent any
+
+```
+stages {
+
+    stage('Load code') {
+        steps {
+            // commands
+        }
+    }
+
+    stage('Test') {
+        steps {
+            // commands
+        }
+    }
+}
+```
+
+}
+
+A Pipeline is made up of stages, and each stage contains steps.
+
+5. JENKINSFILE
+
+---
+
+A Jenkinsfile is a file that defines the Jenkins Pipeline.
+
+The Jenkinsfile can be stored inside the GitHub repository.
+
+Project:
+
+python-ci-demo
+
+Flow:
+
+GitHub Repository
+|
+Jenkinsfile
+|
+Jenkins Pipeline
+|
+Stages
+|
+Commands
+
+Using a Jenkinsfile is useful because the pipeline configuration becomes
+part of the source code instead of being configured manually every time
+in the Jenkins UI.
+
+6. GIT / GITHUB INTEGRATION
+
+---
+
+Connected Jenkins to the GitHub repository:
+
+https://github.com/bhakthi133/python-ci-demo.git
+
+Jenkins performs Git operations such as:
+
+git fetch
+git checkout
+
+Jenkins retrieves the required branch and commit.
+
+Console Output showed:
+
+Fetching changes from the remote Git repository
+
+and:
+
+Checking out Revision ...
+
+7. JENKINS WORKSPACE
+
+---
+
+The workspace is the directory where Jenkins executes the pipeline.
+
+Our workspace:
+
+C:\ProgramData\Jenkins.jenkins\workspace\calculator_testing
+
+The repository is checked out into this workspace.
+
+Pipeline commands are executed inside the workspace.
+
+Examples:
+
+python --version
+
+python -m pip install pytest
+
+python -m pytest
+
+8. JENKINS STAGES
+
+---
+
+Created stages for the Python testing pipeline:
+
+Load code
+|
+Set Python
+|
+Install pytest
+|
+Run test
+
+Each stage represents one logical part of the CI process.
+
+9. PYTHON INTEGRATION
+
+---
+
+Initially Jenkins could not find Python.
+
+Error:
+
+'python' is not recognized as an internal or external command
+
+Reason:
+
+Jenkins runs as a Windows service and initially did not have access to
+the user's Python PATH.
+
+We fixed the environment so Jenkins could access Python.
+
+Jenkins finally showed:
+
+Python 3.12.10
+
+10. PYTEST INTEGRATION
+
+---
+
+Configured Jenkins to install pytest using:
+
+python -m pip install pytest
+
+Then executed:
+
+python -m pytest
+
+The project contained 6 tests.
+
+Jenkins successfully executed:
+
+collected 6 items
+
+test_calculator.py ......   [100%]
+
+6 passed
+
+Therefore, Jenkins successfully performed automated testing.
+
+11. JENKINS PLUGINS
+
+---
+
+Jenkins functionality can be extended using plugins.
+
+Plugins provide features and integrations such as:
+
+* Git
+* GitHub
+* Pipeline
+* Credentials
+* Email
+* Notifications
+
+Basic concept:
+
+Jenkins Core
+|
+Plugins
+|
+Additional Functionality
+
+We do not manually add plugin syntax into every Jenkinsfile.
+
+Plugins provide additional functionality to Jenkins.
+
+12. CREDENTIALS
+
+---
+
+Jenkins provides a Credentials system to securely store sensitive
+information.
+
+Examples:
+
+* Username / Password
+* API Tokens
+* SSH Keys
+* Secrets
+
+Sensitive information should NOT be directly written inside the
+Jenkinsfile.
+
+Instead, sensitive values should be stored in Jenkins Credentials and
+referenced when required.
+
+A credential was also created while working on email configuration.
+
+13. BUILD TRIGGERS
+
+---
+
+Build triggers decide WHEN a Jenkins Pipeline should run.
+
+One important trigger is a GitHub push.
+
+Basic flow:
+
+Developer changes code
+|
+git push
+|
+GitHub
+|
+Webhook
+|
+Jenkins
+|
+Pipeline starts
+
+14. GITHUB WEBHOOK
+
+---
+
+GitHub Webhook integration was successfully implemented.
+
+Problem:
+
+Jenkins was running locally at:
+
+http://localhost:8080
+
+GitHub cannot directly access a localhost server from the internet.
+
+Solution:
+
+Cloudflare Tunnel was used to temporarily expose the local Jenkins
+server to the internet.
+
+Cloudflare Tunnel provided a public URL similar to:
+
+https://....trycloudflare.com
+
+This URL forwarded traffic to:
+
+http://localhost:8080
+
+GitHub Webhook was configured as:
+
+https://....trycloudflare.com/github-webhook/
+
+Webhook Event:
+
+push
+
+15. REAL-TIME GITHUB -> JENKINS AUTOMATION
+
+---
+
+The complete automation flow was successfully tested.
+
+When code was pushed:
+
+git push
+
+GitHub sent a webhook request to Jenkins.
+
+Jenkins received the webhook and automatically started the pipeline.
+
+Jenkins Console Output confirmed:
+
+Started by GitHub push by bhakthi133
+
+This confirmed that the GitHub Webhook integration was working.
+
+COMPLETE FLOW:
+
+Code change
+|
+git add
+|
+git commit
+|
+git push
+|
+GitHub
+|
+GitHub Webhook
+|
+Cloudflare Tunnel
+|
+Jenkins
+|
+Checkout code
+|
+Run Pipeline
+|
+Install dependencies
+|
+Run pytest
+|
+6 tests passed
+
+16. DECLARATIVE PIPELINE POST ACTIONS
+
+---
+
+The pipeline can contain a "post" section.
+
+Example:
+
+post {
+always {
+echo 'Pipeline finished.'
+}
+
+```
+success {
+    echo 'Build successful!'
+}
+```
+
+}
+
+The post section allows Jenkins to perform actions depending on the
+final pipeline result.
+
+Example output:
+
+Pipeline finished.
+Build successful!
+
+17. JENKINS CONSOLE OUTPUT
+
+---
+
+Console Output shows what Jenkins is doing during a build.
+
+Important flow:
+
+Started by GitHub push
+|
+Obtained Jenkinsfile
+|
+Checkout
+|
+Stage execution
+|
+Commands
+|
+Test results
+|
+SUCCESS / FAILURE
+
+Console Output is very useful for troubleshooting failed builds because
+it shows the commands executed and the errors produced.
+
+======================================================================
+QUICK REVISION
+==============
+
+Jenkins
+= CI/CD automation tool
+
+Pipeline
+= Defines the automation process
+
+Jenkinsfile
+= File containing the Pipeline definition
+
+Agent
+= Machine/environment where Jenkins runs the job
+
+Stage
+= Logical section of a Pipeline
+
+Step
+= Individual task inside a stage
+
+Workspace
+= Directory where Jenkins executes the Pipeline
+
+Plugin
+= Adds extra functionality to Jenkins
+
+Credentials
+= Secure storage for sensitive information
+
+Webhook
+= Sends an event from GitHub to Jenkins
+
+Console Output
+= Shows what happened during a build
+
+post
+= Executes actions after the Pipeline finishes
+
+### 22. Pipeline Conditions — `when`
+
+Controls **whether a particular stage should run** based on a condition.
+
+**Syntax:**
+
+```
+stage('Deploy') {
+    when {
+        branch 'main'
+    }
+    steps {
+        echo 'Deploying...'
+    }
+}
+```
+
+---
+
+### 23. Error Handling
+
+Controls what happens when a pipeline **succeeds, fails, or finishes**.
+
+**Using `post`:**
+
+```
+post {
+    success {
+        echo 'Build successful'
+    }
+    failure {
+        echo 'Build failed'
+    }
+    always {
+        echo 'Pipeline finished'
+    }
+}
+```
+
+**Using `try/catch`:**
+
+```
+script {
+    try {
+        bat 'python -m pytest'
+    } catch (Exception e) {
+        echo 'Test failed'
+    }
+}
+```
+
+---
+
+### 24. Artifacts
+
+Artifacts are **files produced by a build** that Jenkins saves so they can be downloaded later.
+
+**Syntax:**
+
+```
+post {
+    success {
+        archiveArtifacts artifacts: 'reports/*.html'
+    }
+}
+```
+
+For example:
+
+```
+Build
+ ↓
+Test
+ ↓
+Generate report
+ ↓
+Archive report
+ ↓
+Download from Jenkins
+```
+
+---
+
+### 25. Multibranch Pipeline
+
+A Multibranch Pipeline automatically discovers and builds **different branches** that contain a `Jenkinsfile`.
+
+```
+GitHub Repository
+ ├── main
+ │    └── Jenkinsfile
+ ├── develop
+ │    └── Jenkinsfile
+ └── feature/login
+      └── Jenkinsfile
+```
+
+Jenkins creates/manages separate pipeline executions for the branches.
+
