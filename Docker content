@@ -1,1 +1,3360 @@
 
+# Docker — Complete Concepts, Commands & Hands-on Documentation
+
+## 1. Docker Components
+
+### Main Docker components
+
+| Component        | Purpose                                                                  |
+| ---------------- | ------------------------------------------------------------------------ |
+| Docker Client    | CLI used to send commands to Docker                                      |
+| Docker Daemon    | Background service that manages images, containers, networks and volumes |
+| Docker Engine    | Docker's container runtime/platform                                      |
+| Docker Image     | Read-only template used to create containers                             |
+| Docker Container | Running/isolated instance of an image                                    |
+| Docker Registry  | Stores and distributes Docker images                                     |
+| Docker Hub       | Docker's public cloud registry                                           |
+| Dockerfile       | Instructions used to build an image                                      |
+| Docker Compose   | Defines and runs multi-container applications                            |
+| Docker Swarm     | Docker's built-in container orchestration mode                           |
+| Docker Network   | Allows containers/services to communicate                                |
+| Docker Volume    | Persistent storage managed by Docker                                     |
+
+---
+
+# 2. Docker Architecture
+
+Basic flow:
+
+```text
+User
+  |
+  | docker commands
+  v
+Docker CLI
+  |
+  | Docker API
+  v
+Docker Daemon
+  |
+  +-------- Images
+  |
+  +-------- Containers
+  |
+  +-------- Networks
+  |
+  +-------- Volumes
+  |
+  +-------- Plugins
+```
+
+For Docker Hub:
+
+```text
+Docker CLI
+    |
+    | docker pull / push
+    v
+Docker Hub / Registry
+```
+
+For Dockerfile:
+
+```text
+Dockerfile
+    |
+    | docker build
+    v
+Docker Image
+    |
+    | docker run
+    v
+Container
+```
+
+Useful commands:
+
+```bash
+docker version
+docker info
+docker help
+docker <command> --help
+docker system df
+docker system info
+```
+
+Examples:
+
+```bash
+docker version
+```
+
+Shows Docker Client and Docker Server/Engine versions.
+
+```bash
+docker info
+```
+
+Shows information about the Docker Engine, containers, images, storage, CPUs, memory, Docker root directory, etc.
+
+```bash
+docker system df
+```
+
+Shows Docker disk usage.
+
+```bash
+docker --help
+```
+
+Shows available Docker commands.
+
+---
+
+# 3. Docker CLI Command Structure
+
+General format:
+
+```bash
+docker <command> <subcommand> [options]
+```
+
+Examples:
+
+```bash
+docker image ls
+docker container ls
+docker volume ls
+docker network ls
+docker compose up
+docker swarm init
+```
+
+Many commands also have shorter aliases:
+
+```bash
+docker images
+docker ps
+docker run
+docker pull
+docker push
+docker exec
+docker logs
+```
+
+---
+
+# 4. Dockerfile
+
+A Dockerfile is a text file containing instructions used to build a Docker image.
+
+Basic structure:
+
+```dockerfile
+FROM python:3.12
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install -r requirements.txt
+
+COPY . .
+
+ENV APP_ENV=production
+
+EXPOSE 8000
+
+CMD ["python", "app.py"]
+```
+
+Official Dockerfile instructions include:
+
+```text
+FROM
+RUN
+CMD
+ENTRYPOINT
+COPY
+ADD
+WORKDIR
+ENV
+ARG
+EXPOSE
+USER
+VOLUME
+HEALTHCHECK
+LABEL
+ONBUILD
+SHELL
+STOPSIGNAL
+```
+
+The Dockerfile normally starts with `FROM`, and instructions are processed in order.
+
+---
+
+# 5. Dockerfile Instructions
+
+## FROM
+
+Defines the base image.
+
+```dockerfile
+FROM python:3.12
+```
+
+Another example:
+
+```dockerfile
+FROM ubuntu:24.04
+```
+
+Multi-stage example:
+
+```dockerfile
+FROM python:3.12 AS builder
+
+# build steps
+
+FROM python:3.12-slim
+
+# runtime steps
+```
+
+---
+
+## RUN
+
+Executes commands while building the image.
+
+```dockerfile
+RUN apt-get update
+```
+
+Example:
+
+```dockerfile
+RUN pip install -r requirements.txt
+```
+
+Important:
+
+```text
+RUN → executed during image BUILD
+```
+
+---
+
+## CMD
+
+Defines the default command executed when a container starts.
+
+```dockerfile
+CMD ["python", "app.py"]
+```
+
+If you run:
+
+```bash
+docker run myimage
+```
+
+Docker uses the CMD.
+
+But:
+
+```bash
+docker run myimage python test.py
+```
+
+can override the default CMD.
+
+Only the last `CMD` in a Dockerfile takes effect.
+
+---
+
+## ENTRYPOINT
+
+Defines the main executable of the container.
+
+```dockerfile
+ENTRYPOINT ["python"]
+```
+
+With:
+
+```dockerfile
+CMD ["app.py"]
+```
+
+Running:
+
+```bash
+docker run myimage
+```
+
+effectively runs:
+
+```bash
+python app.py
+```
+
+A common pattern is:
+
+```dockerfile
+ENTRYPOINT ["python"]
+CMD ["app.py"]
+```
+
+Then:
+
+```bash
+docker run myimage test.py
+```
+
+uses:
+
+```bash
+python test.py
+```
+
+---
+
+## CMD vs ENTRYPOINT
+
+### CMD
+
+```dockerfile
+CMD ["python", "app.py"]
+```
+
+Runtime command can easily replace it.
+
+### ENTRYPOINT
+
+```dockerfile
+ENTRYPOINT ["python"]
+```
+
+The executable remains fixed while CMD can provide default arguments.
+
+---
+
+# 6. COPY
+
+Copies files/directories from build context into image.
+
+```dockerfile
+COPY app.py /app/
+```
+
+Example:
+
+```dockerfile
+COPY . .
+```
+
+---
+
+# 7. ADD
+
+Similar to COPY but has additional functionality such as handling local tar archives and URLs.
+
+```dockerfile
+ADD file.tar /app/
+```
+
+For normal local file copying, `COPY` is generally preferred.
+
+---
+
+# 8. WORKDIR
+
+Sets the working directory.
+
+```dockerfile
+WORKDIR /app
+```
+
+After:
+
+```dockerfile
+WORKDIR /app
+```
+
+commands such as:
+
+```dockerfile
+RUN pwd
+COPY .
+CMD ...
+```
+
+operate relative to that directory where applicable.
+
+---
+
+# 9. ENV
+
+Sets environment variables in the image/container.
+
+```dockerfile
+ENV APP_ENV=production
+```
+
+Multiple variables:
+
+```dockerfile
+ENV APP_ENV=production \
+    PORT=8000
+```
+
+Check inside container:
+
+```bash
+echo $APP_ENV
+```
+
+---
+
+# 10. ARG
+
+Defines build-time variables.
+
+```dockerfile
+ARG VERSION=1.0
+```
+
+Build:
+
+```bash
+docker build --build-arg VERSION=2.0 -t myimage .
+```
+
+Difference:
+
+```text
+ARG → mainly build-time
+ENV → available in resulting image/container environment
+```
+
+Do not use ARG for secrets because build arguments can become visible through image history/provenance.
+
+---
+
+# 11. EXPOSE
+
+Documents the port that the application listens on.
+
+```dockerfile
+EXPOSE 8000
+```
+
+Important:
+
+```text
+EXPOSE does NOT publish the port to the host.
+```
+
+To actually publish:
+
+```bash
+docker run -p 8000:8000 myimage
+```
+
+Meaning:
+
+```text
+Host port : Container port
+8000      : 8000
+```
+
+---
+
+# 12. USER
+
+Specifies the user used to run subsequent commands/container process.
+
+```dockerfile
+USER appuser
+```
+
+Example:
+
+```dockerfile
+RUN useradd -m appuser
+USER appuser
+```
+
+---
+
+# 13. VOLUME
+
+Declares a mount point.
+
+```dockerfile
+VOLUME /data
+```
+
+Volumes are useful for persistent data.
+
+---
+
+# 14. HEALTHCHECK
+
+Defines a health check for the container.
+
+Example:
+
+```dockerfile
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+```
+
+Health status can be:
+
+```text
+starting
+healthy
+unhealthy
+```
+
+Exit codes:
+
+```text
+0 → healthy
+1 → unhealthy
+2 → reserved
+```
+
+---
+
+# 15. LABEL
+
+Adds metadata.
+
+```dockerfile
+LABEL maintainer="team"
+```
+
+Example:
+
+```dockerfile
+LABEL version="1.0"
+LABEL description="Python application"
+```
+
+---
+
+# 16. Docker Image Commands
+
+## List images
+
+```bash
+docker images
+```
+
+or:
+
+```bash
+docker image ls
+```
+
+All images including intermediate/dangling:
+
+```bash
+docker image ls -a
+```
+
+---
+
+## Build an image
+
+```bash
+docker build -t myimage .
+```
+
+With tag:
+
+```bash
+docker build -t myimage:v1 .
+```
+
+Specify Dockerfile:
+
+```bash
+docker build -f Dockerfile.dev -t myimage .
+```
+
+Build with argument:
+
+```bash
+docker build --build-arg VERSION=2.0 -t myimage .
+```
+
+---
+
+## Inspect image
+
+```bash
+docker image inspect myimage
+```
+
+or:
+
+```bash
+docker inspect myimage
+```
+
+---
+
+## Image history
+
+```bash
+docker history myimage
+```
+
+or:
+
+```bash
+docker image history myimage
+```
+
+---
+
+## Pull image
+
+```bash
+docker pull nginx
+```
+
+Specific tag:
+
+```bash
+docker pull nginx:alpine
+```
+
+Specific platform:
+
+```bash
+docker pull --platform linux/amd64 nginx
+```
+
+---
+
+## Tag image
+
+```bash
+docker tag myimage username/myimage:v1
+```
+
+Example:
+
+```bash
+docker tag calculator_image bhakthisp/calculator:v1
+```
+
+---
+
+## Push image
+
+```bash
+docker push username/myimage:v1
+```
+
+---
+
+## Remove image
+
+```bash
+docker rmi myimage
+```
+
+or:
+
+```bash
+docker image rm myimage
+```
+
+---
+
+## Remove unused images
+
+```bash
+docker image prune
+```
+
+Remove all unused images:
+
+```bash
+docker image prune -a
+```
+
+---
+
+## Save image to TAR
+
+```bash
+docker save -o myimage.tar myimage
+```
+
+---
+
+## Load image from TAR
+
+```bash
+docker load -i myimage.tar
+```
+
+---
+
+# 17. Docker Containers
+
+A container is a runnable instance of an image.
+
+Basic flow:
+
+```text
+Image
+  |
+  | docker run
+  v
+Container
+```
+
+---
+
+# 18. Create and Run Container
+
+Basic:
+
+```bash
+docker run nginx
+```
+
+Detached mode:
+
+```bash
+docker run -d nginx
+```
+
+Give container a name:
+
+```bash
+docker run -d --name mynginx nginx
+```
+
+Interactive terminal:
+
+```bash
+docker run -it ubuntu bash
+```
+
+Remove automatically after exit:
+
+```bash
+docker run --rm ubuntu
+```
+
+---
+
+# 19. Container Port Mapping
+
+```bash
+docker run -d -p 8080:80 nginx
+```
+
+Meaning:
+
+```text
+Host:8080 → Container:80
+```
+
+Specific host IP:
+
+```bash
+docker run -p 127.0.0.1:8080:80 nginx
+```
+
+Publish all ports declared by EXPOSE:
+
+```bash
+docker run -P nginx
+```
+
+---
+
+# 20. Container Environment Variables
+
+Using `-e`:
+
+```bash
+docker run -e APP_ENV=production myimage
+```
+
+Multiple variables:
+
+```bash
+docker run \
+  -e APP_ENV=production \
+  -e PORT=8000 \
+  myimage
+```
+
+Using an environment file:
+
+```bash
+docker run --env-file .env myimage
+```
+
+Check variables:
+
+```bash
+docker exec mycontainer env
+```
+
+or:
+
+```bash
+docker exec mycontainer printenv
+```
+
+---
+
+# 21. Container Commands
+
+List running containers:
+
+```bash
+docker ps
+```
+
+List all containers:
+
+```bash
+docker ps -a
+```
+
+Create without starting:
+
+```bash
+docker create --name mycontainer nginx
+```
+
+Start:
+
+```bash
+docker start mycontainer
+```
+
+Stop:
+
+```bash
+docker stop mycontainer
+```
+
+Restart:
+
+```bash
+docker restart mycontainer
+```
+
+Kill:
+
+```bash
+docker kill mycontainer
+```
+
+Pause:
+
+```bash
+docker pause mycontainer
+```
+
+Unpause:
+
+```bash
+docker unpause mycontainer
+```
+
+Remove:
+
+```bash
+docker rm mycontainer
+```
+
+Force remove running container:
+
+```bash
+docker rm -f mycontainer
+```
+
+---
+
+# 22. Container Logs
+
+```bash
+docker logs mycontainer
+```
+
+Follow logs:
+
+```bash
+docker logs -f mycontainer
+```
+
+Last 100 lines:
+
+```bash
+docker logs --tail 100 mycontainer
+```
+
+With timestamps:
+
+```bash
+docker logs -t mycontainer
+```
+
+---
+
+# 23. Execute Commands Inside Container
+
+```bash
+docker exec mycontainer ls
+```
+
+Interactive shell:
+
+```bash
+docker exec -it mycontainer bash
+```
+
+If bash isn't available:
+
+```bash
+docker exec -it mycontainer sh
+```
+
+Run environment command:
+
+```bash
+docker exec mycontainer env
+```
+
+Important:
+
+`docker exec` works only while the container's primary process is running.
+
+---
+
+# 24. Container Inspection
+
+```bash
+docker inspect mycontainer
+```
+
+Specific information:
+
+```bash
+docker inspect --format '{{.State.Status}}' mycontainer
+```
+
+Check IP:
+
+```bash
+docker inspect --format '{{.NetworkSettings.IPAddress}}' mycontainer
+```
+
+---
+
+# 25. Container Resource Usage
+
+```bash
+docker stats
+```
+
+Specific container:
+
+```bash
+docker stats mycontainer
+```
+
+One-time result:
+
+```bash
+docker stats --no-stream
+```
+
+---
+
+# 26. Container Processes
+
+```bash
+docker top mycontainer
+```
+
+---
+
+# 27. Copy Files
+
+Host → container:
+
+```bash
+docker cp file.txt mycontainer:/app/
+```
+
+Container → host:
+
+```bash
+docker cp mycontainer:/app/file.txt .
+```
+
+---
+
+# 28. Container Port Information
+
+```bash
+docker port mycontainer
+```
+
+---
+
+# 29. Override Container Command
+
+Suppose Dockerfile contains:
+
+```dockerfile
+CMD ["python", "app.py"]
+```
+
+Normal:
+
+```bash
+docker run myimage
+```
+
+runs:
+
+```text
+python app.py
+```
+
+Override:
+
+```bash
+docker run myimage python test.py
+```
+
+Now:
+
+```text
+python test.py
+```
+
+is executed instead.
+
+This is different from `docker exec`.
+
+```text
+docker run image command
+    → starts a NEW container with another command
+
+docker exec container command
+    → executes another command INSIDE an existing running container
+```
+
+---
+
+# 30. Docker Runtime Privileges
+
+Containers normally run with restricted capabilities compared with the host.
+
+Run container with privileged mode:
+
+```bash
+docker run --privileged myimage
+```
+
+This gives the container significantly broader access to host devices/capabilities.
+
+Because of the security implications, `--privileged` should be used only when required.
+
+Other useful security/runtime options include:
+
+```bash
+docker run --user 1000:1000 myimage
+```
+
+Run as a particular user.
+
+```bash
+docker run --read-only myimage
+```
+
+Make the container root filesystem read-only.
+
+```bash
+docker run --cap-drop ALL myimage
+```
+
+Drop Linux capabilities.
+
+```bash
+docker run --cap-add NET_ADMIN myimage
+```
+
+Add a specific capability.
+
+---
+
+# 31. Docker Volumes
+
+Volumes are Docker-managed persistent storage.
+
+Basic commands:
+
+```bash
+docker volume create myvolume
+docker volume ls
+docker volume inspect myvolume
+docker volume rm myvolume
+docker volume prune
+```
+
+Official Docker documentation recommends volumes for persistent container data because the data exists independently of a container's writable layer.
+
+---
+
+# 32. Mount Named Volume
+
+Create:
+
+```bash
+docker volume create appdata
+```
+
+Use:
+
+```bash
+docker run -d \
+  --name mycontainer \
+  -v appdata:/data \
+  myimage
+```
+
+New syntax:
+
+```bash
+docker run -d \
+  --name mycontainer \
+  --mount source=appdata,target=/data \
+  myimage
+```
+
+---
+
+# 33. Data Persistence
+
+Without volume:
+
+```text
+Container
+   |
+   +-- application data
+```
+
+Delete container:
+
+```text
+Data in writable container layer → deleted
+```
+
+With volume:
+
+```text
+Container
+    |
+    +---- /data
+            |
+            v
+       Docker Volume
+            |
+            v
+       Persistent data
+```
+
+Delete container:
+
+```text
+Container → deleted
+Volume → remains
+Data → remains
+```
+
+---
+
+# 34. Bind Mount
+
+Mount a host directory:
+
+```bash
+docker run -v ./data:/app/data myimage
+```
+
+Or:
+
+```bash
+docker run \
+  --mount type=bind,source="$(pwd)/data",target=/app/data \
+  myimage
+```
+
+Difference:
+
+```text
+Volume:
+Docker manages storage.
+
+Bind mount:
+User specifies the host directory.
+```
+
+---
+
+# 35. Read-only Volume Mount
+
+```bash
+docker run -v appdata:/data:ro myimage
+```
+
+or:
+
+```bash
+docker run --mount source=appdata,target=/data,readonly myimage
+```
+
+---
+
+# 36. Volume Backup
+
+Example concept:
+
+```bash
+docker run --rm \
+  --volumes-from dbstore \
+  -v "$(pwd)":/backup \
+  ubuntu \
+  tar cvf /backup/backup.tar /dbdata
+```
+
+Restore:
+
+```bash
+docker run --rm \
+  --volumes-from dbstore2 \
+  -v "$(pwd)":/backup \
+  ubuntu \
+  bash -c "cd /dbdata && tar xvf /backup/backup.tar --strip 1"
+```
+
+---
+
+# 37. Docker Networking
+
+Docker networking allows containers to communicate with:
+
+```text
+Container ↔ Container
+Container ↔ Host
+Container ↔ External network
+```
+
+Common Docker network drivers:
+
+```text
+bridge
+host
+none
+overlay
+ipvlan
+macvlan
+```
+
+---
+
+# 38. Network Commands
+
+List networks:
+
+```bash
+docker network ls
+```
+
+Create:
+
+```bash
+docker network create mynetwork
+```
+
+Inspect:
+
+```bash
+docker network inspect mynetwork
+```
+
+Remove:
+
+```bash
+docker network rm mynetwork
+```
+
+Remove unused networks:
+
+```bash
+docker network prune
+```
+
+Connect container:
+
+```bash
+docker network connect mynetwork mycontainer
+```
+
+Disconnect:
+
+```bash
+docker network disconnect mynetwork mycontainer
+```
+
+---
+
+# 39. User-defined Bridge Network
+
+Create:
+
+```bash
+docker network create mynetwork
+```
+
+Run containers:
+
+```bash
+docker run -d --name app1 --network mynetwork nginx
+docker run -d --name app2 --network mynetwork nginx
+```
+
+Now containers on the same user-defined network can communicate using container names.
+
+For example:
+
+```bash
+docker exec app1 ping app2
+```
+
+User-defined bridge networks provide Docker's embedded DNS-based name resolution.
+
+---
+
+# 40. Network Drivers
+
+### Bridge
+
+Used for containers communicating on the same Docker host.
+
+```bash
+docker network create -d bridge mybridge
+```
+
+### Host
+
+Container shares the host's network namespace.
+
+```bash
+docker run --network host nginx
+```
+
+With host networking, `-p` port publishing has no effect.
+
+### None
+
+Completely isolates networking:
+
+```bash
+docker run --network none alpine
+```
+
+### Overlay
+
+Used for communication across Docker daemons, commonly with Swarm:
+
+```bash
+docker network create -d overlay myoverlay
+```
+
+For attachable overlay:
+
+```bash
+docker network create -d overlay --attachable myoverlay
+```
+
+### Macvlan
+
+```bash
+docker network create -d macvlan ...
+```
+
+### IPvlan
+
+```bash
+docker network create -d ipvlan ...
+```
+
+---
+
+# 41. Docker Port Publishing
+
+Basic:
+
+```bash
+docker run -p 8080:80 nginx
+```
+
+Format:
+
+```text
+-p HOST_PORT:CONTAINER_PORT
+```
+
+Example:
+
+```text
+-p 9000:8000
+```
+
+means:
+
+```text
+localhost:9000 → container:8000
+```
+
+Bind to localhost only:
+
+```bash
+docker run -p 127.0.0.1:8080:80 nginx
+```
+
+Publish all exposed ports:
+
+```bash
+docker run -P nginx
+```
+
+---
+
+# 42. Docker Hub
+
+Docker Hub is a registry where Docker images can be stored and shared.
+
+Typical workflow:
+
+```text
+Dockerfile
+   |
+docker build
+   |
+Local Image
+   |
+docker tag
+   |
+docker push
+   |
+Docker Hub
+   |
+docker pull
+   |
+Other machine
+```
+
+---
+
+# 43. Docker Login
+
+```bash
+docker login
+```
+
+Docker's current CLI supports browser/device-code authentication for Docker Hub.
+
+Logout:
+
+```bash
+docker logout
+```
+
+---
+
+# 44. Docker Hub Push Workflow
+
+Build:
+
+```bash
+docker build -t myapp .
+```
+
+Tag:
+
+```bash
+docker tag myapp USERNAME/myapp:v1
+```
+
+Login:
+
+```bash
+docker login
+```
+
+Push:
+
+```bash
+docker push USERNAME/myapp:v1
+```
+
+On another machine:
+
+```bash
+docker pull USERNAME/myapp:v1
+```
+
+Run:
+
+```bash
+docker run USERNAME/myapp:v1
+```
+
+---
+
+# 45. Docker Repository vs Image vs Tag
+
+Example:
+
+```text
+bhakthisp/calculator:v1
+```
+
+Conceptually:
+
+```text
+Docker Hub username
+        |
+        v
+     bhakthisp
+        |
+        v
+     calculator
+        |
+        v
+        v1
+```
+
+```text
+Registry → Docker Hub
+
+Repository → calculator
+
+Tag → v1
+
+Image → specific image identified by repository/tag or digest
+```
+
+---
+
+# 46. GitHub Actions + Docker Hub
+
+Typical CI/CD flow:
+
+```text
+GitHub repository
+       |
+       | push
+       v
+GitHub Actions
+       |
+       +-- checkout code
+       |
+       +-- Docker login
+       |
+       +-- Docker build
+       |
+       +-- Docker test
+       |
+       +-- Docker push
+       v
+Docker Hub
+```
+
+Docker officially provides GitHub Actions for:
+
+```text
+Docker Login
+Docker Setup Buildx
+Docker Metadata
+Docker Build and Push
+Docker Setup QEMU
+Docker Setup Compose
+Docker Scout
+```
+
+Typical workflow:
+
+```yaml
+name: Docker CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: USERNAME/myapp:latest
+```
+
+Important:
+
+```text
+DO NOT put Docker Hub passwords directly in workflow YAML.
+```
+
+Use GitHub Secrets/Variables.
+
+---
+
+# 47. GitHub Actions — Build Before Push
+
+Useful CI flow:
+
+```text
+Checkout
+   ↓
+Build image
+   ↓
+Run tests
+   ↓
+Push image
+```
+
+Docker's official documentation also demonstrates building/loading an image, testing it with `docker run`, and then building/pushing the final image.
+
+Example:
+
+```yaml
+- name: Build
+  uses: docker/build-push-action@v7
+  with:
+    load: true
+    tags: USERNAME/myapp:test
+
+- name: Test
+  run: docker run --rm USERNAME/myapp:test
+
+- name: Build and Push
+  uses: docker/build-push-action@v7
+  with:
+    push: true
+    tags: USERNAME/myapp:latest
+```
+
+---
+
+# 48. Jenkins + Docker
+
+Jenkins can interact with Docker from a Jenkinsfile.
+
+Typical pipeline:
+
+```text
+Developer
+    |
+    v
+GitHub
+    |
+    v
+Jenkins
+    |
+    +-- Checkout
+    |
+    +-- Build
+    |
+    +-- Test
+    |
+    +-- Docker build
+    |
+    +-- Docker login
+    |
+    +-- Docker push
+    v
+Docker Hub
+```
+
+Example:
+
+```groovy
+pipeline {
+    agent any
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Image') {
+            steps {
+                bat 'docker build -t USERNAME/myapp:latest .'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                bat 'docker run --rm USERNAME/myapp:latest'
+            }
+        }
+
+        stage('Push') {
+            steps {
+                bat 'docker push USERNAME/myapp:latest'
+            }
+        }
+    }
+}
+```
+
+For secure credentials, Jenkins credentials should be used instead of putting passwords directly into the Jenkinsfile.
+
+Jenkins also supports Docker Pipeline functionality such as:
+
+```groovy
+agent {
+    docker {
+        image 'python:3.12'
+    }
+}
+```
+
+and:
+
+```groovy
+docker.image('python:3.12').inside {
+    sh 'python --version'
+}
+```
+
+---
+
+# 49. Docker Runtime Resource Management
+
+By default, containers do not have a fixed CPU/memory limit.
+
+Resource limits can be specified using `docker run`.
+
+---
+
+## Memory limit
+
+```bash
+docker run --memory=512m nginx
+```
+
+Short form:
+
+```bash
+docker run -m 512m nginx
+```
+
+Example:
+
+```bash
+docker run --memory=1g myimage
+```
+
+---
+
+## Memory reservation
+
+```bash
+docker run --memory-reservation=256m myimage
+```
+
+---
+
+## Memory + swap
+
+Example:
+
+```bash
+docker run --memory=512m --memory-swap=1g myimage
+```
+
+---
+
+## CPU limit
+
+```bash
+docker run --cpus=1 myimage
+```
+
+Meaning approximately one CPU's worth of CPU time.
+
+Example:
+
+```bash
+docker run --cpus=0.5 myimage
+```
+
+Limits container to approximately half a CPU.
+
+---
+
+## CPU shares
+
+```bash
+docker run --cpu-shares=512 myimage
+```
+
+Default weight is generally 1024.
+
+CPU shares matter when CPU resources are constrained.
+
+---
+
+## Specific CPU cores
+
+```bash
+docker run --cpuset-cpus="0,1" myimage
+```
+
+or:
+
+```bash
+docker run --cpuset-cpus="0-3" myimage
+```
+
+---
+
+## Check resource usage
+
+```bash
+docker stats
+```
+
+One-time:
+
+```bash
+docker stats --no-stream
+```
+
+The resource documentation covers memory limits, CPU limits, CPU shares, CPU sets and related runtime controls.
+
+---
+
+# 50. Docker Container Healthchecks
+
+Healthcheck example while running a container:
+
+```bash
+docker run \
+  --health-cmd="curl -f http://localhost:8000/ || exit 1" \
+  --health-interval=30s \
+  --health-timeout=5s \
+  --health-retries=3 \
+  myimage
+```
+
+Additional useful option:
+
+```bash
+--health-start-period=30s
+```
+
+Newer Docker versions also support:
+
+```bash
+--health-start-interval
+```
+
+---
+
+# 51. Inspect Health Status
+
+```bash
+docker inspect mycontainer
+```
+
+Look for:
+
+```text
+State
+Health
+Status
+```
+
+Useful formatted command:
+
+```bash
+docker inspect --format='{{.State.Health.Status}}' mycontainer
+```
+
+Possible result:
+
+```text
+starting
+```
+
+```text
+healthy
+```
+
+or:
+
+```text
+unhealthy
+```
+
+Healthcheck output can also be inspected through the container's health state.
+
+---
+
+# 52. Compose
+
+Docker Compose allows an application to be described in a YAML file.
+
+Modern Docker Compose normally uses:
+
+```text
+compose.yaml
+```
+
+or:
+
+```text
+docker-compose.yml
+```
+
+Compose is particularly useful for applications consisting of multiple services.
+
+Example:
+
+```text
+Application
+   |
+   +-- Web container
+   |
+   +-- Database container
+   |
+   +-- Redis container
+```
+
+---
+
+# 53. Basic Compose YAML Structure
+
+Single container example:
+
+```yaml
+services:
+
+  app:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+```
+
+Run:
+
+```bash
+docker compose up
+```
+
+Detached:
+
+```bash
+docker compose up -d
+```
+
+Stop/remove:
+
+```bash
+docker compose down
+```
+
+---
+
+# 54. Compose With Build
+
+```yaml
+services:
+
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+```
+
+Run:
+
+```bash
+docker compose up --build
+```
+
+---
+
+# 55. Compose Environment Variables
+
+```yaml
+services:
+
+  app:
+    image: myapp
+    environment:
+      APP_ENV: production
+      PORT: 8000
+```
+
+Or:
+
+```yaml
+environment:
+  - APP_ENV=production
+  - PORT=8000
+```
+
+---
+
+# 56. Compose Volumes
+
+```yaml
+services:
+
+  app:
+    image: myapp
+    volumes:
+      - appdata:/data
+
+volumes:
+  appdata:
+```
+
+---
+
+# 57. Compose Multiple Containers
+
+Example:
+
+```yaml
+services:
+
+  web:
+    image: nginx
+    ports:
+      - "8080:80"
+
+  app:
+    image: myapp
+
+  redis:
+    image: redis
+```
+
+Run:
+
+```bash
+docker compose up -d
+```
+
+List:
+
+```bash
+docker compose ps
+```
+
+Logs:
+
+```bash
+docker compose logs
+```
+
+Specific service:
+
+```bash
+docker compose logs web
+```
+
+Follow:
+
+```bash
+docker compose logs -f
+```
+
+---
+
+# 58. Important Compose Commands
+
+Start:
+
+```bash
+docker compose up
+```
+
+Detached:
+
+```bash
+docker compose up -d
+```
+
+Build:
+
+```bash
+docker compose build
+```
+
+Build + start:
+
+```bash
+docker compose up --build
+```
+
+Stop:
+
+```bash
+docker compose stop
+```
+
+Start stopped services:
+
+```bash
+docker compose start
+```
+
+Restart:
+
+```bash
+docker compose restart
+```
+
+List containers:
+
+```bash
+docker compose ps
+```
+
+View logs:
+
+```bash
+docker compose logs
+```
+
+Execute command:
+
+```bash
+docker compose exec app sh
+```
+
+Pull images:
+
+```bash
+docker compose pull
+```
+
+Push images:
+
+```bash
+docker compose push
+```
+
+Show configuration:
+
+```bash
+docker compose config
+```
+
+Scale:
+
+```bash
+docker compose scale app=3
+```
+
+Remove application:
+
+```bash
+docker compose down
+```
+
+Remove volumes too:
+
+```bash
+docker compose down -v
+```
+
+---
+
+# 59. Compose Network Concept
+
+Compose normally creates a project network.
+
+For example:
+
+```text
+compose project
+       |
+       v
+   app network
+    /       \
+   /         \
+ web         db
+```
+
+Services can communicate using service names.
+
+Example:
+
+```text
+web → db:5432
+```
+
+instead of needing to know the database container's IP address.
+
+---
+
+# 60. Docker Plugins
+
+Docker plugins extend Docker functionality.
+
+Main plugin commands:
+
+```bash
+docker plugin ls
+docker plugin install
+docker plugin inspect
+docker plugin enable
+docker plugin disable
+docker plugin set
+docker plugin upgrade
+docker plugin push
+docker plugin rm
+docker plugin create
+```
+
+---
+
+## List plugins
+
+```bash
+docker plugin ls
+```
+
+---
+
+## Search Docker Hub
+
+```bash
+docker search <term>
+```
+
+Example:
+
+```bash
+docker search volume
+```
+
+---
+
+## Install plugin
+
+General form:
+
+```bash
+docker plugin install PLUGIN
+```
+
+Example structure:
+
+```bash
+docker plugin install <plugin-name>
+```
+
+---
+
+## Inspect plugin
+
+```bash
+docker plugin inspect <plugin-name>
+```
+
+---
+
+## Enable
+
+```bash
+docker plugin enable <plugin-name>
+```
+
+---
+
+## Disable
+
+```bash
+docker plugin disable <plugin-name>
+```
+
+---
+
+## Set plugin configuration
+
+```bash
+docker plugin set <plugin-name> <key>=<value>
+```
+
+---
+
+## Upgrade
+
+```bash
+docker plugin upgrade <plugin-name>
+```
+
+---
+
+## Remove
+
+```bash
+docker plugin rm <plugin-name>
+```
+
+Plugin hands-on practice is still pending.
+
+---
+
+# 61. Docker Swarm Mode
+
+Docker Swarm is Docker's built-in orchestration mode.
+
+Important concepts:
+
+```text
+Swarm
+ |
+ +-- Manager nodes
+ |
+ +-- Worker nodes
+ |
+ +-- Services
+ |
+ +-- Tasks
+ |
+ +-- Containers
+```
+
+Example:
+
+```text
+             Swarm
+               |
+       +-------+-------+
+       |               |
+    Manager          Worker
+       |               |
+   Service          Task
+                       |
+                   Container
+```
+
+---
+
+# 62. Initialize Swarm
+
+```bash
+docker swarm init
+```
+
+Example with advertised address:
+
+```bash
+docker swarm init --advertise-addr <IP>
+```
+
+The node where `docker swarm init` runs becomes a manager.
+
+---
+
+# 63. Check Swarm State
+
+```bash
+docker info
+```
+
+Look for:
+
+```text
+Swarm: active
+```
+
+---
+
+# 64. Get Worker Join Command
+
+```bash
+docker swarm join-token worker
+```
+
+This displays a command similar to:
+
+```bash
+docker swarm join \
+  --token <TOKEN> \
+  <MANAGER-IP>:2377
+```
+
+---
+
+# 65. Get Manager Join Command
+
+```bash
+docker swarm join-token manager
+```
+
+---
+
+# 66. Join Swarm
+
+On a worker:
+
+```bash
+docker swarm join --token <TOKEN> <MANAGER-IP>:2377
+```
+
+---
+
+# 67. List Swarm Nodes
+
+Manager:
+
+```bash
+docker node ls
+```
+
+Inspect:
+
+```bash
+docker node inspect <node>
+```
+
+Leave:
+
+```bash
+docker swarm leave
+```
+
+Force leave:
+
+```bash
+docker swarm leave --force
+```
+
+---
+
+# 68. Swarm Node Commands
+
+```bash
+docker node ls
+docker node inspect <node>
+docker node ps <node>
+docker node rm <node>
+docker node update <node>
+docker node demote <node>
+docker node promote <node>
+```
+
+Node availability:
+
+```text
+active
+pause
+drain
+```
+
+Example:
+
+```bash
+docker node update --availability drain <node>
+```
+
+This prevents new tasks from being scheduled there and is useful when taking a node out of service.
+
+---
+
+# 69. Docker Swarm Services
+
+A Swarm service describes the desired state of application tasks.
+
+Create:
+
+```bash
+docker service create --name web nginx
+```
+
+List:
+
+```bash
+docker service ls
+```
+
+Inspect:
+
+```bash
+docker service inspect web
+```
+
+Tasks:
+
+```bash
+docker service ps web
+```
+
+Logs:
+
+```bash
+docker service logs web
+```
+
+Remove:
+
+```bash
+docker service rm web
+```
+
+---
+
+# 70. Create Replicated Service
+
+```bash
+docker service create \
+  --name web \
+  --replicas 3 \
+  nginx
+```
+
+Meaning:
+
+```text
+Service: web
+
+Desired replicas: 3
+
+        Service
+       /   |   \
+      /    |    \
+ Task 1  Task 2  Task 3
+   |       |       |
+Container Container Container
+```
+
+---
+
+# 71. Scale Swarm Service
+
+```bash
+docker service scale web=5
+```
+
+or:
+
+```bash
+docker service update --replicas 5 web
+```
+
+Check:
+
+```bash
+docker service ls
+```
+
+---
+
+# 72. Publish Swarm Service Port
+
+```bash
+docker service create \
+  --name web \
+  --publish 8080:80 \
+  nginx
+```
+
+---
+
+# 73. Update Swarm Service
+
+Example:
+
+```bash
+docker service update --image nginx:latest web
+```
+
+Change replicas:
+
+```bash
+docker service update --replicas=5 web
+```
+
+---
+
+# 74. Rollback Swarm Service
+
+```bash
+docker service rollback web
+```
+
+Automatic rollback can also be configured during service updates.
+
+---
+
+# 75. Swarm Service Resource Limits
+
+Example:
+
+```bash
+docker service create \
+  --name web \
+  --limit-memory 512M \
+  nginx
+```
+
+Reservation:
+
+```bash
+docker service create \
+  --name web \
+  --reserve-memory 256M \
+  nginx
+```
+
+Concept:
+
+```text
+Reservation
+→ minimum resource requirement used for scheduling
+
+Limit
+→ maximum resource the task is allowed to consume
+```
+
+---
+
+# 76. Swarm Overlay Network
+
+Create:
+
+```bash
+docker network create \
+  --driver overlay \
+  myoverlay
+```
+
+Attachable:
+
+```bash
+docker network create \
+  --driver overlay \
+  --attachable \
+  myoverlay
+```
+
+Use with service:
+
+```bash
+docker service create \
+  --name web \
+  --network myoverlay \
+  nginx
+```
+
+Overlay networks allow communication between services/containers across different Docker hosts in a Swarm.
+
+---
+
+# 77. Swarm Secrets
+
+Useful commands:
+
+```bash
+docker secret ls
+docker secret create
+docker secret inspect
+docker secret rm
+```
+
+Example:
+
+```bash
+echo "mypassword" | docker secret create db_password -
+```
+
+Use in service:
+
+```bash
+docker service create \
+  --name db \
+  --secret db_password \
+  mysql
+```
+
+---
+
+# 78. Swarm Configs
+
+Commands:
+
+```bash
+docker config ls
+docker config create
+docker config inspect
+docker config rm
+```
+
+Configs are intended for non-sensitive configuration data.
+
+---
+
+# 79. Docker System Cleanup
+
+Check disk usage:
+
+```bash
+docker system df
+```
+
+Remove stopped containers:
+
+```bash
+docker container prune
+```
+
+Remove unused networks:
+
+```bash
+docker network prune
+```
+
+Remove unused images:
+
+```bash
+docker image prune
+```
+
+Remove unused volumes:
+
+```bash
+docker volume prune
+```
+
+General cleanup:
+
+```bash
+docker system prune
+```
+
+More aggressive:
+
+```bash
+docker system prune -a
+```
+
+Include unused volumes:
+
+```bash
+docker system prune -a --volumes
+```
+
+Be careful with prune commands because they delete unused Docker objects.
+
+---
+
+# 80. Useful Docker Troubleshooting Commands
+
+Check Docker:
+
+```bash
+docker version
+docker info
+```
+
+Check containers:
+
+```bash
+docker ps
+docker ps -a
+```
+
+Check image:
+
+```bash
+docker images
+docker inspect <image>
+docker history <image>
+```
+
+Check container:
+
+```bash
+docker inspect <container>
+docker logs <container>
+docker stats <container>
+docker top <container>
+```
+
+Check network:
+
+```bash
+docker network ls
+docker network inspect <network>
+```
+
+Check volume:
+
+```bash
+docker volume ls
+docker volume inspect <volume>
+```
+
+Check Compose:
+
+```bash
+docker compose config
+docker compose ps
+docker compose logs
+```
+
+Check Swarm:
+
+```bash
+docker info
+docker node ls
+docker service ls
+docker service ps <service>
+```
+
+---
+
+# 81. Important Docker Command Cheat Sheet
+
+## Docker basics
+
+```bash
+docker version
+docker info
+docker help
+docker system df
+```
+
+## Images
+
+```bash
+docker images
+docker image ls
+docker build -t name:tag .
+docker pull image:tag
+docker push image:tag
+docker tag image username/image:tag
+docker image inspect image
+docker history image
+docker rmi image
+docker image prune
+docker save -o image.tar image
+docker load -i image.tar
+```
+
+## Containers
+
+```bash
+docker run image
+docker run -d image
+docker run -it image sh
+docker run --name name image
+docker ps
+docker ps -a
+docker start container
+docker stop container
+docker restart container
+docker kill container
+docker rm container
+docker rm -f container
+docker logs container
+docker logs -f container
+docker exec -it container sh
+docker inspect container
+docker stats
+docker top container
+docker cp source container:path
+docker cp container:path destination
+docker port container
+```
+
+## Environment
+
+```bash
+docker run -e KEY=value image
+docker run --env-file .env image
+docker exec container env
+```
+
+## Ports
+
+```bash
+docker run -p 8080:80 image
+docker run -P image
+```
+
+## Volumes
+
+```bash
+docker volume create volume
+docker volume ls
+docker volume inspect volume
+docker volume rm volume
+docker volume prune
+docker run -v volume:/data image
+docker run --mount source=volume,target=/data image
+```
+
+## Networks
+
+```bash
+docker network ls
+docker network create network
+docker network inspect network
+docker network connect network container
+docker network disconnect network container
+docker network rm network
+docker network prune
+```
+
+## Compose
+
+```bash
+docker compose up
+docker compose up -d
+docker compose up --build
+docker compose down
+docker compose down -v
+docker compose ps
+docker compose logs
+docker compose logs -f
+docker compose exec service sh
+docker compose build
+docker compose pull
+docker compose push
+docker compose restart
+docker compose stop
+docker compose start
+docker compose config
+docker compose stats
+```
+
+## Plugins
+
+```bash
+docker plugin ls
+docker plugin install
+docker plugin inspect
+docker plugin enable
+docker plugin disable
+docker plugin set
+docker plugin upgrade
+docker plugin push
+docker plugin rm
+docker plugin create
+```
+
+## Swarm
+
+```bash
+docker swarm init
+docker swarm join
+docker swarm join-token worker
+docker swarm join-token manager
+docker swarm leave
+docker swarm unlock
+docker swarm unlock-key
+docker swarm update
+docker swarm ca
+```
+
+## Swarm nodes
+
+```bash
+docker node ls
+docker node inspect
+docker node ps
+docker node update
+docker node promote
+docker node demote
+docker node rm
+```
+
+## Swarm services
+
+```bash
+docker service create
+docker service ls
+docker service inspect
+docker service ps
+docker service logs
+docker service scale
+docker service update
+docker service rollback
+docker service rm
+```
+
+## Swarm secrets/configs
+
+```bash
+docker secret ls
+docker secret create
+docker secret inspect
+docker secret rm
+
+docker config ls
+docker config create
+docker config inspect
+docker config rm
+```
+
+---
+
+# 82. Topics Already Covered vs Pending
+
+## Covered
+
+### Docker Fundamentals
+
+* Docker components
+* Docker architecture
+* Docker Client
+* Docker Daemon
+* Images
+* Containers
+* Registry
+* Repository
+* Docker Hub
+
+### Dockerfile
+
+* Dockerfile structure
+* FROM
+* RUN
+* CMD
+* ENTRYPOINT
+* COPY
+* ADD
+* WORKDIR
+* ENV
+* ARG
+* EXPOSE
+* USER
+* VOLUME
+* HEALTHCHECK
+* Basic Dockerfile build
+
+### Images
+
+* Image creation
+* `docker build`
+* `docker images`
+* `docker image ls`
+* `docker pull`
+* `docker push`
+* `docker tag`
+* `docker inspect`
+* `docker history`
+* Image removal
+
+### Containers
+
+* Creating containers
+* Running containers
+* Detached mode
+* Interactive mode
+* Container naming
+* `docker ps`
+* `docker ps -a`
+* start/stop/restart/remove
+* `docker logs`
+* `docker exec`
+* overriding container commands
+* `docker cp`
+* `docker top`
+* `docker stats`
+* exposed/published ports
+* `-p`
+* `-P`
+* runtime privileges
+* overriding
+* container healthchecks
+
+### Environment Variables
+
+* Dockerfile ENV
+* `docker run -e`
+* `--env-file`
+* Container environment inspection
+
+### Storage
+
+* Docker volumes
+* named volumes
+* volume mounting
+* data persistence
+* volume inspection
+* volume sharing
+* bind mounts
+
+### Networking
+
+* Basic networking concepts
+* bridge network
+* host network
+* none network
+* overlay concept
+* port publishing
+* container-to-container communication
+* user-defined networks
+* DNS/service-name communication
+
+### Docker Hub
+
+* Login
+* Pull
+* Tag
+* Push
+* Repository/image/tag concept
+
+### CI/CD
+
+* GitHub Actions + Docker Hub
+* Jenkins + Docker
+* Jenkins + Docker Hub concept
+
+### Runtime Resources
+
+* Memory
+* CPU
+* `docker stats`
+* CPU limits
+* memory limits
+
+### Healthchecks
+
+* `HEALTHCHECK`
+* `--health-cmd`
+* `--health-interval`
+* `--health-timeout`
+* `--health-retries`
+* health status inspection
+
+### Compose
+
+* Basic `.yml`/Compose structure
+* Single-container Compose
+* services
+* image
+* build
+* ports
+* environment
+* volumes
+* basic `docker compose` commands
+
+### Swarm
+
+* Swarm Mode basics
+* CLI
+* manager/worker concept
+* `docker swarm init`
+* join tokens
+* services
+* replicas
+* scaling
+* basic overlay networking
+
+---
+
+# 83. Pending Hands-on Topics
+
+These are the areas you specifically mentioned as pending:
+
+### Docker Compose
+
+```text
+Multiple services
+Service-to-service communication
+Compose networks
+Compose volumes
+depends_on
+healthcheck
+environment files
+restart policies
+multiple replicas
+```
+
+Practice:
+
+```bash
+docker compose up -d
+docker compose ps
+docker compose logs
+docker compose exec
+docker compose down
+```
+
+Then build a:
+
+```text
+Web + Backend + Database
+```
+
+application.
+
+---
+
+### Docker Plugins
+
+Hands-on:
+
+```bash
+docker plugin ls
+docker plugin install
+docker plugin inspect
+docker plugin enable
+docker plugin disable
+docker plugin set
+docker plugin upgrade
+docker plugin rm
+```
+
+---
+
+### Swarm Hands-on
+
+Practice:
+
+```bash
+docker swarm init
+docker node ls
+docker service create
+docker service ls
+docker service ps
+docker service scale
+docker service update
+docker service rollback
+docker network create --driver overlay
+```
+
+Then practice:
+
+```text
+1 Manager
+   +
+2 Workers
+   +
+1 Service
+   +
+Multiple replicas
+   +
+Overlay network
+```
+
+---
+
+# 84. Recommended Hands-on Order
+
+For your remaining Docker learning, this order will make the concepts connect well:
+
+```text
+1. Docker CLI basics
+        ↓
+2. Images
+        ↓
+3. Dockerfile
+        ↓
+4. Containers
+        ↓
+5. Environment variables
+        ↓
+6. Volumes
+        ↓
+7. Networking
+        ↓
+8. Healthchecks
+        ↓
+9. Resource limits
+        ↓
+10. Docker Hub
+        ↓
+11. GitHub Actions + Docker Hub
+        ↓
+12. Jenkins + Docker Hub
+        ↓
+13. Docker Compose
+        ↓
+14. Docker Plugins
+        ↓
+15. Docker Swarm
+        ↓
+16. Swarm Services + Replicas
+        ↓
+17. Overlay Networking
+        ↓
+18. Swarm Stack
+```
+
+---
+
+# 85. Official Documentation Reference
+
+The main official Docker CLI reference covers the current Docker command hierarchy, including images, containers, networks, volumes, Compose, plugins, Swarm, services and nodes.
+
+Useful official references:
+
+* Docker CLI
+* Dockerfile reference
+* Docker Images
+* Docker Containers
+* Docker Volumes
+* Docker Networking
+* Docker Compose
+* Docker Resource Constraints
+* Docker Plugins
+* Docker Swarm
+* Docker Services
+* Docker + GitHub Actions
+* Jenkins + Docker Pipeline
+
+This document should be treated as a learning/command reference rather than a replacement for the official command-specific documentation, because individual commands have many additional options and version-dependent flags.
