@@ -1,0 +1,8 @@
+1.Data types
+2.Variables
+3.Type conversion
+4.Conditions & loops (if,else,elif,for,while,break,continue,match)
+6.Operators
+5.Functions { default args,keyword args, orbitary args(*args,**args, defining functions), special parameters(/,*),
+             unpacking args(*args,**args,while callling the function) , Lambda expression }
+
